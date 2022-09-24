@@ -4,7 +4,6 @@
 
 #include "utils.h"
 
-
 string char2hex(unsigned char chr)
 {
     /*for (auto i : tmpVec){

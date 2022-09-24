@@ -1,13 +1,9 @@
-#include "windows.h"
-#include <iostream>
 #include <shobjidl.h>
 #include <fstream>
 
 #include "patcher.h"
 #include "utils.h"
-
-using std::endl;
-using std::cout;
+#include "logger.h"
 
 #define FAIL_CANNOT_OPEN_FILE (-1)
 #define FAIL_CANNOT_READ_FILE (-2)
@@ -76,7 +72,7 @@ int main() {
 
     if (!MCPatcher::open(strpath))
     {
-        cout << "[x] Can't read executable file!" << endl;
+        Error("Can't read executable file!")
         return FAIL_CANNOT_READ_FILE;
     }
     else
@@ -84,10 +80,12 @@ int main() {
         std::ofstream ofs(strpath + ".bak",ios::binary);
         ofs << MCPatcher::getImage().rdbuf();
         if (ofs.good())
-            cout << "[i] Backup created to: " << strpath + ".bak" << endl;
+        {
+            Info("Backup created to: {}.bak",strpath)
+        }
         else
         {
-            cout << "[x] Fail to create backup!" << endl;
+            Error("Fail to create backup!")
             return FAIL_BACKUP;
         }
         ofs.close();
@@ -99,18 +97,20 @@ int main() {
     auto patches = MCPatcher::patches[platform];
     if (!patches.empty())
     {
-        cout << "[x] There are no patches available for the current platform." << endl;
+        Error("There are no patches available for the current platform.")
         return FAIL_CURRENT_PLATFORM_NO_PATCH;
     }
 
     // Do patch;
 
-    cout << "[i] Looking for bytes..." << endl;
+    Info("Looking for bytes...")
     if (MCPatcher::tryApply(platform))
-        cout << "[i] Patch successfully." << endl;
+    {
+        Info("Patch successfully.")
+    }
     else
     {
-        cout << "[x] Failed, if it is the latest version, please send issue." << endl;
+        Error("Failed, if it is the latest version, please send issue.")
         return FAIL_CANNOT_FIND_BYTE;
     }
 

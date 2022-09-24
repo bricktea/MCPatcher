@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <fstream>
 #include <utility>
-#include <iostream>
+#include "logger.h"
 
 #include "utils.h"
 

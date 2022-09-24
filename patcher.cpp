@@ -4,15 +4,12 @@
 
 #include "patcher.h"
 
-using std::cout;
-using std::endl;
-
 void MCPatcher::registerPatch(Platform platform, const string& name, const vector<pair<vector<unsigned char>,vector<unsigned char>>>& patch) {
     for (auto& i : patch)
     {
         if (i.first.size() != i.second.size())
         {
-            cout << "[x] The wrong patch is being registered!" << endl;
+            Error("The wrong patch is being registered!");
             return;
         }
     }
@@ -38,8 +35,8 @@ bool MCPatcher::tryApply(Platform platform) {
     auto isOk = true;
     for (auto& it : tryuse)
     {
-        cout << "[i] Trying \"" << it.first << "\" patch." << endl;
-        cout << "[i] Need to find " << it.second.size() << " binary position..." << endl;
+        Info("Trying \"{}\" patch.",it.first);
+        Info("Need to find {} binary position...",it.second.size());
         needModify.clear();
         auto count = 0;
         for (auto& bin : it.second)
@@ -48,12 +45,12 @@ bool MCPatcher::tryApply(Platform platform) {
             auto pos = findBytes(image,bin.first);
             if (pos)
             {
-                cout << "[i] Point " << count << " founded, " << pos << "." << endl;
+                Info("Point {} founded, {}.",count,pos);
                 needModify.emplace_back(pair{pos,bin.second});
             }
             else
             {
-                cout << "[i] Point " << count << " not found, try the next set." << endl;
+                Warn("Point {} not found, try the next set.",count);
                 isOk = false;
                 break;
             }
