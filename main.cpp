@@ -32,41 +32,52 @@ int main() {
 
     // Ask for binary file;
 
-    HRESULT result = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     string strpath;
-    if (SUCCEEDED(result))
+    if (argc == 1)
     {
-        cout << "[i] Please open an executable for minecraft. (Minecraft.Windows.exe)" << endl;
-        IFileOpenDialog *openFile;
-        CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
-                              IID_IFileOpenDialog, reinterpret_cast<void**>(&openFile));
-        COMDLG_FILTERSPEC extNames[] =
-                {
-                        { L"Minecraft", L"*.exe" }
-                };
-        openFile->SetFileTypes(1,extNames);
-        openFile->Show(nullptr);
-        IShellItem *pItem;
-        result = openFile->GetResult(&pItem);
+        HRESULT result = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
         if (SUCCEEDED(result))
         {
-            PWSTR pPath;
-            pItem->GetDisplayName(SIGDN_FILESYSPATH, &pPath);
-            std::wstringstream path;
-            path << pPath;
-            strpath = wchar2string(path.str().c_str());
-            cout << "[i] Selected " << strpath << "." << endl;
-            pItem->Release();
+            Info("Please open an executable for minecraft. (Minecraft.Windows.exe)")
+            IFileOpenDialog *openFile;
+            CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
+                             IID_IFileOpenDialog, reinterpret_cast<void**>(&openFile));
+            COMDLG_FILTERSPEC extNames[] =
+                    {
+                            { L"Minecraft", L"*.exe" }
+                    };
+            openFile->SetFileTypes(1,extNames);
+            openFile->Show(nullptr);
+            IShellItem *pItem;
+            result = openFile->GetResult(&pItem);
+            if (SUCCEEDED(result))
+            {
+                PWSTR pPath;
+                pItem->GetDisplayName(SIGDN_FILESYSPATH, &pPath);
+                std::wstringstream path;
+                path << pPath;
+                strpath = wchar2string(path.str().c_str());
+                Info("Selected {}.",strpath)
+                pItem->Release();
+            }
+            else
+            {
+                Error("Open file failed!")
+            }
+            openFile->Release();
+            CoUninitialize();
         }
-        else
-        {
-            cout << "[x] Open file failed!" << endl;
-        }
-        openFile->Release();
-        CoUninitialize();
+        if (strpath.empty())
+            return FAIL_CANNOT_OPEN_FILE;
     }
-    if (strpath.empty())
-        return FAIL_CANNOT_OPEN_FILE;
+    else if (argc == 2)
+    {
+        strpath = argv[1];
+    }
+    else
+    {
+        Error("Wrong parameter!")
+    }
 
     // Open file;
 
