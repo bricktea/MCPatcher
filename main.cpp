@@ -11,7 +11,13 @@
 #define FAIL_CURRENT_PLATFORM_NO_PATCH (-4)
 #define FAIL_BACKUP (-5)
 
-int main() {
+#define VERSION "1.0.1"
+
+int main(int argc, char *argv[]) {
+
+    // Welcome message.
+
+    Info("MCPatcher v{}  OpenSource: github.com/Redbeanw44602/MCPatcher, MIT",VERSION)
 
     // Add known patches;
 
