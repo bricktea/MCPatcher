@@ -7,7 +7,7 @@
 void MCPatcher::registerPatch(Platform platform, const string& name, const vector<SinglePatch>& patch) {
     for (auto& i : patch)
     {
-        if (i.first.size() != i.second.size())
+        if (i.mBefore.size() != i.mAfter.size())
         {
             Error("The wrong patch is being registered!");
             return;
@@ -17,10 +17,9 @@ void MCPatcher::registerPatch(Platform platform, const string& name, const vecto
 }
 
 bool MCPatcher::apply(Platform platform) {
-    auto tryuse = mPatches[platform];
     vector<std::pair<long long, BinarySequence>> needModify;
     auto isOk = true;
-    for (auto& it : tryuse)
+    for (auto& it : mPatches[platform])
     {
         Info("Trying \"{}\" patch.", it.first);
         Info("Need to find {} binary position...", it.second.size());
@@ -29,11 +28,12 @@ bool MCPatcher::apply(Platform platform) {
         for (auto& bin : it.second)
         {
             count++;
-            auto pos = findBytes(mImage, bin.first);
+            auto pos = findBytes(mImage, bin.mBefore);
             if (pos)
             {
-                Info("Point {} founded, {}.", count,pos);
-                needModify.emplace_back(pair{pos, bin.second});
+                Info("Point {} founded, {}.", count, pos);
+                needModify.emplace_back(std::pair{pos, bin.mAfter});
+                isOk = true;
             }
             else
             {

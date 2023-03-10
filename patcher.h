@@ -15,7 +15,6 @@
 using std::vector;
 using std::unordered_map;
 using std::string;
-using std::pair;
 using std::fstream;
 
 enum class Platform {
@@ -28,7 +27,11 @@ public:
     ~MCPatcher();
 
     using BinarySequence = vector<unsigned char>;
-    using SinglePatch = pair<BinarySequence, BinarySequence>;
+
+    struct SinglePatch {
+        BinarySequence mBefore;
+        BinarySequence mAfter;
+    };
 
     void registerPatch(Platform, const string& name, const vector<SinglePatch>& patch);
 

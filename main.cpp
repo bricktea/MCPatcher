@@ -23,6 +23,8 @@ int main(int argc, char *argv[]) {
 
     MCPatcher patcher;
 
+    // PatchName *from* [PV(preview)|FM(formal)|BT(beta)][VERSION][-][FUNCTION ADDRESS]
+
     patcher.registerPatch(
             Platform::Win10,
             "PV1193025-1403A4F20",
@@ -34,6 +36,17 @@ int main(int argc, char *argv[]) {
                 {
                     { 0x48, 0x83, 0xC3, 0x10, 0x48, 0x3B, 0xDF, 0x75, 0xEA, 0xB0, /*O*/0x01, 0x48, 0x8B, 0x7C, 0x24 },
                     { 0x48, 0x83, 0xC3, 0x10, 0x48, 0x3B, 0xDF, 0x75, 0xEA, 0xB0, /*N*/0x00, 0x48, 0x8B, 0x7C, 0x24 }
+                }
+            }
+            );
+
+    patcher.registerPatch(
+            Platform::Win10,
+            "PV1198020-14124C910",
+            {
+                {
+                    { 0x0D, 0xB8, 0x00, 0xEB, 0x04, 0x0F, 0xB6, 0x42, 0x10, 0x84, 0xC0, 0x74, 0x26, 0xB0, /*O*/0x01, 0x48 },
+                    { 0x0D, 0xB8, 0x00, 0xEB, 0x04, 0x0F, 0xB6, 0x42, 0x10, 0x84, 0xC0, 0x74, 0x26, 0xB0, /*N*/0x00, 0x48 }
                 }
             }
             );
@@ -96,7 +109,7 @@ int main(int argc, char *argv[]) {
     }
     else
     {
-        std::ofstream ofs(strpath + ".bak",ios::binary);
+        std::ofstream ofs(strpath + ".bak", std::ios::binary);
         ofs << patcher.getImage().rdbuf();
         if (ofs.good())
         {
@@ -114,7 +127,7 @@ int main(int argc, char *argv[]) {
 
     auto platform = Platform::Win10;
     auto patches = patcher.getPatches(platform);
-    if (!patches.empty())
+    if (patches.empty())
     {
         Error("There are no patches available for the current platform.");
         return FAIL_CURRENT_PLATFORM_NO_PATCH;

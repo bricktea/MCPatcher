@@ -18,4 +18,4 @@ using std::vector;
 
 string char2hex(unsigned char chr);
 string wchar2string(const wchar_t *wchar);
-long long findBytes(std::fstream& file, const vector<unsigned char> &bytes);
+unsigned long long findBytes(std::fstream& file, const vector<unsigned char> &bytes);

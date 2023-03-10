@@ -26,13 +26,14 @@ string wchar2string(const wchar_t *wchar)
     return str;
 }
 
-long long findBytes(std::fstream& file, const vector<unsigned char> &bytes)
+unsigned long long findBytes(std::fstream& file, const vector<unsigned char> &bytes)
 {
     unsigned char chr;
     std::vector<unsigned char> tmpVec;
-    auto length = bytes.size();
-    auto loops = 0;
-    file.seekg(0);
+    size_t length = bytes.size();
+    size_t loops = 0LL;
+    file.clear();
+    file.seekg(0, std::ios::beg);
     while(file.read((char *)&chr, sizeof(chr)))
     {
         loops++;
