@@ -4,7 +4,7 @@
 
 #include "patcher.h"
 
-void MCPatcher::registerPatch(Platform platform, const string& name, const vector<pair<vector<unsigned char>,vector<unsigned char>>>& patch) {
+void MCPatcher::registerPatch(Platform platform, const string& name, const vector<SinglePatch>& patch) {
     for (auto& i : patch)
     {
         if (i.first.size() != i.second.size())
@@ -13,44 +13,31 @@ void MCPatcher::registerPatch(Platform platform, const string& name, const vecto
             return;
         }
     }
-    patches[platform][name] = patch;
+    mPatches[platform][name] = patch;
 }
 
-bool MCPatcher::open(const string &path) {
-    image.open(path,ios::binary|ios::in|ios::out);
-    return image.is_open();
-}
-
-void MCPatcher::close() {
-    return image.close();
-}
-
-fstream& MCPatcher::getImage() {
-    return image;
-}
-
-bool MCPatcher::tryApply(Platform platform) {
-    auto tryuse = patches[platform];
-    vector<std::pair<long long,vector<unsigned char>>> needModify;
+bool MCPatcher::apply(Platform platform) {
+    auto tryuse = mPatches[platform];
+    vector<std::pair<long long, BinarySequence>> needModify;
     auto isOk = true;
     for (auto& it : tryuse)
     {
-        Info("Trying \"{}\" patch.",it.first);
-        Info("Need to find {} binary position...",it.second.size());
+        Info("Trying \"{}\" patch.", it.first);
+        Info("Need to find {} binary position...", it.second.size());
         needModify.clear();
         auto count = 0;
         for (auto& bin : it.second)
         {
             count++;
-            auto pos = findBytes(image,bin.first);
+            auto pos = findBytes(mImage, bin.first);
             if (pos)
             {
-                Info("Point {} founded, {}.",count,pos);
-                needModify.emplace_back(pair{pos,bin.second});
+                Info("Point {} founded, {}.", count,pos);
+                needModify.emplace_back(pair{pos, bin.second});
             }
             else
             {
-                Warn("Point {} not found, try the next set.",count);
+                Warn("Point {} not found, try the next set.", count);
                 isOk = false;
                 break;
             }
@@ -62,11 +49,30 @@ bool MCPatcher::tryApply(Platform platform) {
         return false;
     for (auto& patch : needModify)
     {
-        image.seekg(patch.first);
+        mImage.seekg(patch.first);
         for (auto& bts : patch.second)
         {
-            image.write((char *)&bts, sizeof(bts));
+            mImage.write((char *)&bts, sizeof(bts));
         }
     }
-    return image.good();
+    return mImage.good();
+}
+
+bool MCPatcher::target(const string& path) {
+    mImage.open(path, std::ios::binary | std::ios::in | std::ios::out);
+    return mImage.is_open();
+}
+
+fstream& MCPatcher::getImage() {
+    return mImage;
+}
+
+unordered_map<string, vector<MCPatcher::SinglePatch>>& MCPatcher::getPatches(Platform platform) {
+    return mPatches[platform];
+}
+
+MCPatcher::~MCPatcher() {
+
+    mImage.close();
+
 }

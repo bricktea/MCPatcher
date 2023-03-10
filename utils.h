@@ -2,8 +2,7 @@
 // Created by RedbeanW on 9/16/2022.
 //
 
-#ifndef MCPATCHER_UTILS_H
-#define MCPATCHER_UTILS_H
+#pragma once
 
 #include <string>
 #include <iostream>
@@ -20,5 +19,3 @@ using std::vector;
 string char2hex(unsigned char chr);
 string wchar2string(const wchar_t *wchar);
 long long findBytes(std::fstream& file, const vector<unsigned char> &bytes);
-
-#endif //MCPATCHER_UTILS_H

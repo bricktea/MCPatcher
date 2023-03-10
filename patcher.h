@@ -2,15 +2,14 @@
 // Created by RedbeanW on 9/16/2022.
 //
 
-#ifndef MCPATCHER_PATCHER_H
-#define MCPATCHER_PATCHER_H
+#pragma once
 
 #include <vector>
 #include <unordered_map>
 #include <fstream>
 #include <utility>
-#include "logger.h"
 
+#include "logger.h"
 #include "utils.h"
 
 using std::vector;
@@ -18,22 +17,32 @@ using std::unordered_map;
 using std::string;
 using std::pair;
 using std::fstream;
-using std::ios;
 
 enum class Platform {
-    Win10 = 0x1
+    Win10
 };
 
-namespace MCPatcher {
+class MCPatcher {
+public:
 
-    static unordered_map<Platform,unordered_map<string,vector<pair<vector<unsigned char>,vector<unsigned char>>>>> patches;
-    static fstream image;
+    ~MCPatcher();
 
-    void registerPatch(Platform, const string& name, const vector<pair<vector<unsigned char>,vector<unsigned char>>>& patch);
+    using BinarySequence = vector<unsigned char>;
+    using SinglePatch = pair<BinarySequence, BinarySequence>;
+
+    void registerPatch(Platform, const string& name, const vector<SinglePatch>& patch);
+
+    bool target(const string& path);
+
+    bool apply(Platform);
+
     fstream& getImage();
-    bool tryApply(Platform);
-    bool open(const string& path);
-    void close();
-}
 
-#endif //MCPATCHER_PATCHER_H
+    unordered_map<string, vector<SinglePatch>>& getPatches(Platform);
+
+private:
+
+    unordered_map<Platform, unordered_map<string, vector<SinglePatch>>> mPatches;
+    fstream mImage;
+
+};

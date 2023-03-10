@@ -5,23 +5,25 @@
 #include "utils.h"
 #include "logger.h"
 
-#define FAIL_CANNOT_OPEN_FILE (-1)
-#define FAIL_CANNOT_READ_FILE (-2)
-#define FAIL_CANNOT_FIND_BYTE (-3)
-#define FAIL_CURRENT_PLATFORM_NO_PATCH (-4)
-#define FAIL_BACKUP (-5)
+constexpr unsigned int FAIL_CANNOT_OPEN_FILE = 0x1001;
+constexpr unsigned int FAIL_CANNOT_READ_FILE = 0x1002;
+constexpr unsigned int FAIL_CANNOT_FIND_BYTE = 0x1003;
+constexpr unsigned int FAIL_CURRENT_PLATFORM_NO_PATCH = 0x1004;
+constexpr unsigned int FAIL_BACKUP = 0x1005;
 
-#define VERSION "1.0.1"
+#define VERSION "1.1.0"
 
 int main(int argc, char *argv[]) {
 
     // Welcome message.
 
-    Info("MCPatcher v{}  OpenSource: github.com/Redbeanw44602/MCPatcher, MIT",VERSION)
+    Info("MCPatcher v{}  OpenSource: github.com/Redbeanw44602/MCPatcher [MIT]",VERSION);
 
     // Add known patches;
 
-    MCPatcher::registerPatch(
+    MCPatcher patcher;
+
+    patcher.registerPatch(
             Platform::Win10,
             "PV1193025-1403A4F20",
             {
@@ -44,7 +46,7 @@ int main(int argc, char *argv[]) {
         HRESULT result = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
         if (SUCCEEDED(result))
         {
-            Info("Please open an executable for minecraft. (Minecraft.Windows.exe)")
+            Info("Please open an executable for minecraft. (Minecraft.Windows.exe)");
             IFileOpenDialog *openFile;
             CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
                              IID_IFileOpenDialog, reinterpret_cast<void**>(&openFile));
@@ -63,12 +65,12 @@ int main(int argc, char *argv[]) {
                 std::wstringstream path;
                 path << pPath;
                 strpath = wchar2string(path.str().c_str());
-                Info("Selected {}.",strpath)
+                Info("Selected {}.",strpath);
                 pItem->Release();
             }
             else
             {
-                Error("Open file failed!")
+                Error("Open file failed!");
             }
             openFile->Release();
             CoUninitialize();
@@ -82,27 +84,27 @@ int main(int argc, char *argv[]) {
     }
     else
     {
-        Error("Wrong parameter!")
+        Error("Wrong parameter!");
     }
 
     // Open file;
 
-    if (!MCPatcher::open(strpath))
+    if (!patcher.target(strpath))
     {
-        Error("Can't read executable file!")
+        Error("Can't read executable file!");
         return FAIL_CANNOT_READ_FILE;
     }
     else
     {
         std::ofstream ofs(strpath + ".bak",ios::binary);
-        ofs << MCPatcher::getImage().rdbuf();
+        ofs << patcher.getImage().rdbuf();
         if (ofs.good())
         {
-            Info("Backup created to: {}.bak",strpath)
+            Info("Backup created to: {}.bak",strpath);
         }
         else
         {
-            Error("Fail to create backup!")
+            Error("Fail to create backup!");
             return FAIL_BACKUP;
         }
         ofs.close();
@@ -111,27 +113,25 @@ int main(int argc, char *argv[]) {
     // Select platform;
 
     auto platform = Platform::Win10;
-    auto patches = MCPatcher::patches[platform];
+    auto patches = patcher.getPatches(platform);
     if (!patches.empty())
     {
-        Error("There are no patches available for the current platform.")
+        Error("There are no patches available for the current platform.");
         return FAIL_CURRENT_PLATFORM_NO_PATCH;
     }
 
     // Do patch;
 
-    Info("Looking for bytes...")
-    if (MCPatcher::tryApply(platform))
+    Info("Looking for bytes...");
+    if (patcher.apply(platform))
     {
-        Info("Patch successfully.")
+        Info("Patch successfully.");
     }
     else
     {
-        Error("Failed, if it is the latest version, please send issue.")
+        Error("Failed, if it is the latest version, please send issue.");
         return FAIL_CANNOT_FIND_BYTE;
     }
-
-    MCPatcher::close();
 
     return 0;
 }
