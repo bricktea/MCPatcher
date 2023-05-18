@@ -10,7 +10,7 @@ A patcher, contains some patches for minecraft.
 ```
 MCPatcher.exe [path]
 ```
- - You can provide no arguments and it will ask you for the path to binary.
+ - You can provide no arguments, and it will ask you for the path to binary.
 ```
 MCPatcher.exe
 ```
@@ -18,7 +18,6 @@ MCPatcher.exe
 ### Platform: Windows
 
 > Binary: *Minecraft.Windows.exe*  
-> Tested: 1.19.22, 1.19.30, 1.19.40.22 (Preview)
-
+> As of 23/05/18, it is effective in all recent versions (release-1.19, preview-1.20), and theoretically supports all versions.
  - No Trial
  - No Chat Report (wip)

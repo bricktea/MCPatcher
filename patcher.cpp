@@ -3,59 +3,69 @@
 //
 
 #include "patcher.h"
+#include <spdlog/spdlog.h>
 
-void MCPatcher::registerPatch(Platform platform, const string& name, const vector<SinglePatch>& patch) {
-    for (auto& i : patch)
-    {
-        if (i.mBefore.size() != i.mAfter.size())
-        {
-            Error("The wrong patch is being registered!");
-            return;
-        }
+void MCPatcher::registerPatch(Platform platform, const string& name, const PatchEntity& patch) {
+    if (patch.valid() && !name.empty()) {
+        mPatches[platform][name] = patch;
     }
-    mPatches[platform][name] = patch;
 }
 
 bool MCPatcher::apply(Platform platform) {
-    vector<std::pair<long long, BinarySequence>> needModify;
-    auto isOk = true;
-    for (auto& it : mPatches[platform])
-    {
-        Info("Trying \"{}\" patch.", it.first);
-        Info("Need to find {} binary position...", it.second.size());
-        needModify.clear();
-        auto count = 0;
-        for (auto& bin : it.second)
-        {
-            count++;
-            auto pos = findBytes(mImage, bin.mBefore);
-            if (pos)
-            {
-                Info("Point {} founded, {}.", count, pos);
-                needModify.emplace_back(std::pair{pos, bin.mAfter});
-                isOk = true;
-            }
-            else
-            {
-                Warn("Point {} not found, try the next set.", count);
-                isOk = false;
-                break;
-            }
-        }
-        if (isOk)
+    vector<std::pair<Address, BYTE>> needModify;
+    for (auto& it : mPatches[platform]) {
+        spdlog::info("Trying \"{}\" patch.", it.first);
+        needModify = handleBytes(it.second.mBytes);
+        if (needModify.empty()) {
+            spdlog::warn("Byte sequence not found.");
+        } else {
+            spdlog::info("Successfully found the byte sequence.");
             break;
-    }
-    if (!isOk || needModify.empty())
-        return false;
-    for (auto& patch : needModify)
-    {
-        mImage.seekg(patch.first);
-        for (auto& bts : patch.second)
-        {
-            mImage.write((char *)&bts, sizeof(bts));
         }
+    }
+    if (needModify.empty()) return false;
+    for (auto& patch : needModify) {
+        mImage.seekg(patch.first - 1);
+        mImage.write((char *)&patch.second, sizeof(patch.second));
     }
     return mImage.good();
+}
+
+vector<std::pair<MCPatcher::Address, BYTE>> MCPatcher::handleBytes(const vector<ByteEntity> &bytes) {
+    if (bytes.empty()) return {};
+    vector<std::pair<MCPatcher::Address, BYTE>> rtn;
+    mImage.seekg(0);
+    int matchedSize = 0;
+    BYTE chr;
+    while(mImage.read((char *)&chr, sizeof(chr))) {
+        auto& byte = bytes.at(matchedSize);
+        if (byte.mType == DataType::ALL) {
+            matchedSize++;
+        } else if (byte.mType == DataType::NORMAL) {
+            if (byte.mData == chr) {
+                matchedSize++;
+            } else {
+                matchedSize = 0;
+                rtn.clear();
+                continue;
+            }
+        }
+        if (byte.mReplacer.mEnabled) {
+            rtn.emplace_back(std::pair {mImage.tellg(), byte.mReplacer.mData});
+        }
+        if (matchedSize == bytes.size()) {
+            //for (auto& i : rtn) {
+            //    mImage.seekg(i.first);
+            //    for (int k = 0; k < 20; k++) {
+            //        mImage.read((char *)&chr, sizeof(chr));
+            //        spdlog::info("byte -> {}", char2hex(chr));
+            //    }
+            //    spdlog::info("address -> {}", i.first);
+            //}
+            return rtn;
+        }
+    }
+    return {};
 }
 
 bool MCPatcher::target(const string& path) {
@@ -67,12 +77,38 @@ fstream& MCPatcher::getImage() {
     return mImage;
 }
 
-unordered_map<string, vector<MCPatcher::SinglePatch>>& MCPatcher::getPatches(Platform platform) {
+unordered_map<string, MCPatcher::PatchEntity>& MCPatcher::getPatches(Platform platform) {
     return mPatches[platform];
 }
 
 MCPatcher::~MCPatcher() {
-
     mImage.close();
+}
 
+// e.g. "74 ?? B0 01(00) 48"
+// Checkless! Boom if input not correctly!
+MCPatcher::PatchEntity MCPatcher::compile(string patchExp) {
+    PatchEntity rtn;
+    patchExp += " ";
+    int nextPosition = 0;
+    for (int i = 0; i < patchExp.size(); i++) {
+        if (i != nextPosition) continue;
+        auto pos = patchExp.find(" ", i, 1);
+        if (pos == patchExp.npos) throw CompileFailed();
+        auto substr = patchExp.substr(i, pos - i);
+        ByteEntity entity;
+        if (substr.substr(0, 2) == "??") {
+            entity.mType = DataType::ALL;
+        } else {
+            entity.mType = DataType::NORMAL;
+            entity.mData = hex2char(substr.substr(0, 2));
+        }
+        if (substr.find("(") != substr.npos) {
+            entity.mReplacer.mEnabled = true;
+            entity.mReplacer.mData = hex2char(substr.substr(3, 2));
+        }
+        nextPosition = pos + 1;
+        rtn.add(entity);
+    }
+    return rtn;
 }

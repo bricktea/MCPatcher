@@ -4,18 +4,23 @@
 
 #include "utils.h"
 
-string char2hex(unsigned char chr)
-{
-    /*for (auto i : tmpVec){
-    }*/
+#include <sstream>
+#include <charconv>
+
+string char2hex(BYTE chr) {
     std::ostringstream ss;
     auto bin = int(chr);
     ss << std::hex << bin;
     return ss.str();
 }
 
-string wchar2string(const wchar_t *wchar)
-{
+unsigned char hex2char(std::string_view str) {
+    unsigned int value;
+    std::from_chars(str.data(), str.data() + str.size(), value, 16);
+    return static_cast<unsigned char>(value);
+}
+
+string wchar2string(const wchar_t *wchar) {
     const wchar_t *wText = wchar;
     DWORD bytes = WideCharToMultiByte(CP_OEMCP,NULL,wText,-1,nullptr,0,nullptr,FALSE);
     char *psText;
@@ -24,31 +29,4 @@ string wchar2string(const wchar_t *wchar)
     string str = psText;
     delete []psText;
     return str;
-}
-
-unsigned long long findBytes(std::fstream& file, const vector<unsigned char> &bytes)
-{
-    unsigned char chr;
-    std::vector<unsigned char> tmpVec;
-    size_t length = bytes.size();
-    size_t loops = 0LL;
-    file.clear();
-    file.seekg(0, std::ios::beg);
-    while(file.read((char *)&chr, sizeof(chr)))
-    {
-        loops++;
-        tmpVec.emplace_back(chr);
-        auto it = tmpVec.rbegin();
-        auto pos = 0;
-        while (it != tmpVec.rend())
-        {
-            pos++;
-            if (pos > length || bytes.at(length - pos) != *it)
-                break;
-            else if (pos == length)
-                return loops - length;
-            ++it;
-        }
-    }
-    return 0;
 }
